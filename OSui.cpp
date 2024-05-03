@@ -123,7 +123,7 @@ void OSui::cat(const std::string &path)
     file_path = cur_dir + '/' + path;
 
   File *fp = FM.fopen(file_path, uid, gid);
-  char *data = new char[fp->f_inode->i_size + 1];
+  char *data = new char[fp->f_inode->i_size + 1]{0};
   FM.fread(data, fp->f_inode->i_size, fp);
   std::cout << data << '\n';
   FM.fclose(fp);
@@ -266,7 +266,6 @@ void OSui::adduser(const std::string &uname, const std::string &pwd, std::string
   std::string new_gdata;
   for (int i = 0; i < groups.size(); i++)
     new_gdata += groups[i] + '\n';
-  std::cout << new_gdata;
   FM.flseek(groupf, 0, SEEK_SET);
   FM.fwrite(new_gdata.c_str(), new_gdata.length(), groupf);
 
@@ -336,7 +335,7 @@ void OSui::deluser(const std::string &uname)
       std::string new_uids;
       for (int j = 0; j < uids.size(); j++)
       {
-        if (stoi(uids[j]) != uid)
+        if (stoi(uids[j]) != d_uid)
           new_uids += (new_uids.length() == 0 ? uids[j] : "," + uids[j]);
       }
       new_gdata += gmsg[0] + "-" + gmsg[1] + "-" + new_uids + "\n";
@@ -408,7 +407,8 @@ void OSui::delgroup(const std::string &gname)
     if (gmsg[0] == gname)
     {
       tag = true;
-      uids = splitstring(gmsg[2], ",");
+      if (gmsg.size() > 2)
+        uids = splitstring(gmsg[2], ",");
     }
     else
       new_gdata += groups[i] + '\n';
@@ -483,10 +483,10 @@ void OSui::win2wlos(const std::string &fname1, const std::string &fname2)
   fclose(winfp);
 
   std::string file_path;
-  if (fname1[0] == '/')
-    file_path = fname1;
+  if (fname2[0] == '/')
+    file_path = fname2;
   else
-    file_path = cur_dir + '/' + fname1;
+    file_path = cur_dir + '/' + fname2;
   File *fsfp = FM.fopen(file_path, uid, gid);
   FM.freplace(data, file_size, fsfp);
   FM.fclose(fsfp);
@@ -507,7 +507,7 @@ void OSui::wlos2win(const std::string &fname1, const std::string &fname2)
   FM.fclose(fsfp);
 
   FILE *winfp;
-  fopen_s(&winfp, fname1.c_str(), "wb");
+  fopen_s(&winfp, fname2.c_str(), "wb");
   if (winfp == NULL)
     throw std::runtime_error("打开windows文件失败\n");
 
@@ -573,7 +573,7 @@ void OSui::RunOS()
 
     if (is_login)
     {
-      if (args[0] == "login" && args.size() == 2)
+      if (args[0] == "login")
       {
         std::cout << "已经登陆了哦！使用 su 命令切换用户或使用 logout 命令退出登录\n";
       }
