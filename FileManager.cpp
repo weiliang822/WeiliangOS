@@ -92,7 +92,10 @@ void FileManager::_read(Inode &inode, char *buf, int offset, int len)
 void FileManager::_write(Inode &inode, const char *buf, int offset, int len)
 {
   if (offset + len > Inode::HUGE_FILE_BLOCK * BLOCK_SIZE)
-    throw std::runtime_error("写文件过大");
+  {
+    std::cout << "error : 写文件过大";
+    return;
+  }
 
   int new_sz;
   if (offset + len > inode.i_size)
@@ -404,8 +407,11 @@ void FileManager::fread(char *buf, int len, File *fp)
   else // 其他用户
     r_shift = 0;
 
-  if (((fp->f_inode->i_mode >> r_shift) & 4) == 0 && fp->f_uid != 0) // 无读权限且不是root用户
-    throw std::runtime_error("权限不足：缺少读权限");
+  if (((fp->f_inode->i_mode >> r_shift) & 4) == 0 && fp->f_uid != 0)
+  {
+    std::cout << "权限不足：缺少读权限\n";
+    return;
+  } // 无读权限且不是root用户
 
   if (fp->f_offset + len > fp->f_inode->i_size)
   {
@@ -426,8 +432,11 @@ void FileManager::fwrite(const char *buf, int len, File *fp)
   else // 其他用户
     r_shift = 0;
 
-  if (((fp->f_inode->i_mode >> r_shift) & 2) == 0 && fp->f_uid != 0) // 无读权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((fp->f_inode->i_mode >> r_shift) & 2) == 0 && fp->f_uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无读权限且不是root用户
 
   this->_write(*fp->f_inode, buf, fp->f_offset, len);
   fp->f_offset += len;
@@ -443,8 +452,11 @@ void FileManager::freplace(const char *buf, int len, File *fp)
   else // 其他用户
     r_shift = 0;
 
-  if (((fp->f_inode->i_mode >> r_shift) & 2) == 0 && fp->f_uid != 0) // 无读权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((fp->f_inode->i_mode >> r_shift) & 2) == 0 && fp->f_uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无读权限且不是root用户
 
   char *old_data = new char[fp->f_inode->i_size + 1];
   this->_read(*fp->f_inode, old_data, 0, fp->f_inode->i_size);
@@ -465,7 +477,10 @@ void FileManager::fcreate(const std::string &path, short uid, short gid)
   std::string fname = paths[paths.size() - 1];
 
   if (fname.size() > DirectoryEntry::DIRSIZ)
-    throw std::runtime_error("新增文件名超过最大长度");
+  {
+    std::cout << "error : 新增文件名超过最大长度\n";
+    return;
+  }
 
   for (int i = 0; i < paths.size() - 1; i++)
     cur_inode = _find(cur_inode, paths[i]);
@@ -481,11 +496,17 @@ void FileManager::fcreate(const std::string &path, short uid, short gid)
   else // 其他用户
     r_shift = 0;
 
-  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0) // 无写权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无写权限且不是root用户
 
   if (cur_inode.i_size >= Inode::HUGE_FILE_BLOCK * BLOCK_SIZE)
-    throw std::runtime_error("当前目录已写满");
+  {
+    std::cout << "error : 当前目录已写满\n";
+    return;
+  }
 
   DirectoryEntry *dir_li = new DirectoryEntry[cur_inode.i_size / DIRECTORY_ENTRY_SIZE];
   this->_read(cur_inode, (char *)dir_li, 0, cur_inode.i_size);
@@ -535,8 +556,11 @@ void FileManager::fdelete(const std::string &path, short uid, short gid)
   else // 其他用户
     r_shift = 0;
 
-  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0) // 无写权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无写权限且不是root用户
 
   DirectoryEntry *dir_li = new DirectoryEntry[cur_inode.i_size / DIRECTORY_ENTRY_SIZE];
   this->_read(cur_inode, (char *)dir_li, 0, cur_inode.i_size);
@@ -552,13 +576,17 @@ void FileManager::fdelete(const std::string &path, short uid, short gid)
     }
 
   if (f_ino == -1)
-    throw std::runtime_error("找不到要删除的文件");
+  {
+    std::cout << "error : 找不到要删除的文件\n";
+    return;
+  }
 
   Inode dinode = this->m_FileSystem.ILoad(f_ino); // 加载要删除的inode
   if (dinode.i_mode & Inode::IFDIR)
   {
     delete[] dir_li;
-    throw std::runtime_error("目录文件不能用fdelete删除");
+    std::cout << "error : 目录文件不能用fdelete删除\n";
+    return;
   }
 
   _fdelete(dinode);
@@ -597,7 +625,10 @@ void FileManager::dcreate(const std::string &path, short uid, short gid)
   std::string dname = paths[paths.size() - 1]; // 新建文件夹名
 
   if (dname.size() > DirectoryEntry::DIRSIZ)
-    throw std::runtime_error("新增目录名超过最大长度");
+  {
+    std::cout << "error : 新增目录名超过最大长度\n";
+    return;
+  }
 
   for (int i = 0; i < paths.size() - 1; i++)
     cur_inode = _find(cur_inode, paths[i]);
@@ -613,11 +644,17 @@ void FileManager::dcreate(const std::string &path, short uid, short gid)
   else // 其他用户
     r_shift = 0;
 
-  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0) // 无写权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无写权限且不是root用户
 
   if (cur_inode.i_size >= Inode::HUGE_FILE_BLOCK * BLOCK_SIZE)
-    throw std::runtime_error("当前目录已写满");
+  {
+    std::cout << "error : 当前目录已写满\n";
+    return;
+  }
 
   DirectoryEntry *dir_li = new DirectoryEntry[cur_inode.i_size / DIRECTORY_ENTRY_SIZE];
   this->_read(cur_inode, (char *)dir_li, 0, cur_inode.i_size);
@@ -625,7 +662,11 @@ void FileManager::dcreate(const std::string &path, short uid, short gid)
   // 若当前目录已存在该目录
   for (int i = 0; i < cur_inode.i_size / DIRECTORY_ENTRY_SIZE; i++)
     if (dir_li[i].m_name == dname)
-      throw std::runtime_error("当前目录下已有该目录");
+    {
+      delete[] dir_li;
+      std::cout << "error : 当前目录下已有该目录\n";
+      return;
+    }
 
   delete[] dir_li;
 
@@ -665,7 +706,10 @@ void FileManager::ddelete(const std::string &path, short uid, short gid)
   std::string dname = paths[paths.size() - 1]; // 删除文件夹名
 
   if (dname == "." || dname == "..")
-    throw std::runtime_error("不能对本目录或上级目录执行删除操作");
+  {
+    std::cout << "error : 不能对本目录或上级目录执行删除操作\n";
+    return;
+  }
 
   for (int i = 0; i < paths.size() - 1; i++)
     cur_inode = _find(cur_inode, paths[i]);
@@ -681,8 +725,11 @@ void FileManager::ddelete(const std::string &path, short uid, short gid)
   else // 其他用户
     r_shift = 0;
 
-  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0) // 无写权限且不是root用户
-    throw std::runtime_error("权限不足：缺少写权限");
+  if (((cur_inode.i_mode >> r_shift) & 2) == 0 && uid != 0)
+  {
+    std::cout << "权限不足：缺少写权限\n";
+    return;
+  } // 无写权限且不是root用户
 
   DirectoryEntry *dir_li = new DirectoryEntry[cur_inode.i_size / DIRECTORY_ENTRY_SIZE];
   this->_read(cur_inode, (char *)dir_li, 0, cur_inode.i_size);
@@ -698,7 +745,10 @@ void FileManager::ddelete(const std::string &path, short uid, short gid)
     }
 
   if (d_ino == -1)
-    throw std::runtime_error("找不到要删除的目录");
+  {
+    std::cout << "error : 找不到要删除的目录\n";
+    return;
+  }
 
   Inode dinode = this->m_FileSystem.ILoad(d_ino); // 加载要删除的inode
   if (!(dinode.i_mode & Inode::IFDIR))
@@ -733,13 +783,16 @@ void FileManager::ChMod(const std::string &path, int mode, short uid, short gid)
     cur_inode = _find(cur_inode, paths[i]);
 
   if (uid != cur_inode.i_uid && uid != 0) // 只有文件主和root用户能修改权限
-    throw std::runtime_error("权限不足");
+  {
+    std::cout << "error : 权限不足\n";
+    return;
+  }
 
   cur_inode.i_mode = (cur_inode.i_mode >> 9 << 9) | mode;
   this->m_FileSystem.ISave(cur_inode);
 }
 
-std::vector<std::string> FileManager::LS(const std::string &path, short uid, short gid)
+void FileManager::LS(const std::string &path, short uid, short gid)
 {
   Inode cur_inode = this->m_FileSystem.ILoad(int(ROOT_DIR_INO));
   std::vector<std::string> paths = splitstring(path, "/");
@@ -759,7 +812,10 @@ std::vector<std::string> FileManager::LS(const std::string &path, short uid, sho
     r_shift = 0;
 
   if (((cur_inode.i_mode >> r_shift) & 4) == 0 && uid != 0) // 无写权限且不是root用户
-    throw std::runtime_error("权限不足：缺少读权限");
+  {
+    std::cout << "权限不足：缺少读权限\n";
+    return;
+  }
 
   DirectoryEntry *dir_li = new DirectoryEntry[cur_inode.i_size / DIRECTORY_ENTRY_SIZE];
   this->_read(cur_inode, (char *)dir_li, 0, cur_inode.i_size);
@@ -844,7 +900,7 @@ std::vector<std::string> FileManager::LS(const std::string &path, short uid, sho
     std::cout << '\n';
     // res.push_back(permission);
   }
-  return res;
+  return;
 }
 
 bool FileManager::Enter(const std::string &path, short uid, short gid)
@@ -862,11 +918,17 @@ bool FileManager::Enter(const std::string &path, short uid, short gid)
     else // 其他用户
       r_shift = 0;
 
-    if (((cur_inode.i_mode >> r_shift) & 1) == 0 && uid != 0) // 无写权限且不是root用户
-      throw std::runtime_error("权限不足：缺少执行权限");
+    if (((cur_inode.i_mode >> r_shift) & 1) == 0 && uid != 0)
+    {
+      std::cout << "权限不足：缺少执行权限\n";
+      return false;
+    } // 无写权限且不是root用户
 
     if (!(cur_inode.i_mode & Inode::IFDIR))
-      throw std::runtime_error("目标路径非目录文件");
+    {
+      std::cout << "error : 目标路径非目录文件\n";
+      return false;
+    }
 
     if (i < paths.size())
       cur_inode = _find(cur_inode, paths[i]);

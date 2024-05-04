@@ -17,8 +17,6 @@ protected:
   short gid;
   bool is_login;
 
-  std::string findpath(const std::string &path); // 寻找路径
-
   void initial();
   void format();
   void mkdir(const std::string &path);
@@ -35,9 +33,9 @@ protected:
   void deluser(const std::string &uname);
   void addgroup(const std::string &gname);
   void delgroup(const std::string &gname);
-  void su(const std::string &uname);
   void df();
   void vim(const std::string &path);
+  void write(const std::string &path, const std::string &content, int pos);
   void win2wlos(const std::string &fname1, const std::string &fname2);
   void wlos2win(const std::string &fname1, const std::string &fname2);
 

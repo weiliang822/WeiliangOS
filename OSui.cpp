@@ -34,14 +34,6 @@ void OSui::initial()
   this->cur_dir = "";
 }
 
-std::string OSui::findpath(const std::string &path)
-{
-  if (path[0] == '/') // 从根目录开始
-    return path;
-  std::vector<std::string> tmp = splitstring(path, "/");
-  return "";
-}
-
 void OSui::format()
 {
   std::cout << "确定格式化文件系统？[y/n]: ";
@@ -62,66 +54,39 @@ void OSui::format()
 
 void OSui::mkdir(const std::string &path)
 {
-  std::string new_dir_path;
-  if (path[0] == '/')
-    new_dir_path = path;
-  else
-    new_dir_path = cur_dir + '/' + path;
-
+  std::string new_dir_path = findPath(path, cur_dir);
   FM.dcreate(new_dir_path, uid, gid);
 }
 
 void OSui::cd(const std::string &path)
 {
-  std::string dir_path;
-  if (path[0] == '/')
-    dir_path = path;
-  else
-    dir_path = cur_dir + '/' + path;
-
+  std::string dir_path = findPath(path, cur_dir);
   if (FM.Enter(dir_path, uid, gid))
     cur_dir = dir_path;
   else
-    throw std::runtime_error("无法进入指定目录");
+    std::cout << "无法进入指定目录\n";
 }
 
 void OSui::ls()
 {
-  std::vector<std::string> li = FM.LS(cur_dir, uid, gid);
-  for (auto i : li)
-    std::cout << i << '\n';
+  FM.LS(cur_dir, uid, gid);
 }
 
 void OSui::rm(const std::string &path)
 {
-  std::string new_path;
-  if (path[0] == '/')
-    new_path = path;
-  else
-    new_path = cur_dir + '/' + path;
-
+  std::string new_path = findPath(path, cur_dir);
   FM.ddelete(new_path, uid, gid);
 }
 
 void OSui::touch(const std::string &path)
 {
-  std::string new_dir_path;
-  if (path[0] == '/')
-    new_dir_path = path;
-  else
-    new_dir_path = cur_dir + '/' + path;
-
+  std::string new_dir_path = findPath(path, cur_dir);
   FM.fcreate(new_dir_path, uid, gid);
 }
 
 void OSui::cat(const std::string &path)
 {
-  std::string file_path;
-  if (path[0] == '/')
-    file_path = path;
-  else
-    file_path = cur_dir + '/' + path;
-
+  std::string file_path = findPath(path, cur_dir);
   File *fp = FM.fopen(file_path, uid, gid);
   char *data = new char[fp->f_inode->i_size + 1]{0};
   FM.fread(data, fp->f_inode->i_size, fp);
@@ -137,12 +102,7 @@ void OSui::pwd()
 
 void OSui::chmod(const std::string &path, int mod)
 {
-  std::string file_path;
-  if (path[0] == '/')
-    file_path = path;
-  else
-    file_path = cur_dir + '/' + path;
-
+  std::string file_path = findPath(path, cur_dir);
   FM.ChMod(file_path, mod, uid, gid);
 }
 
@@ -184,7 +144,7 @@ void OSui::login(const std::string &uname, const std::string &psw)
         }
       }
 
-      cur_dir = "";
+      cur_dir = "/";
       break;
     }
   }
@@ -199,7 +159,10 @@ void OSui::logout()
 void OSui::adduser(const std::string &uname, const std::string &pwd, std::string gname)
 {
   if (uid != 0)
-    throw std::runtime_error("权限不足：缺少添加用户权限");
+  {
+    std::cout << "权限不足：缺少添加用户权限";
+    return;
+  }
 
   if (gname == "")
     gname = uname;
@@ -280,10 +243,16 @@ void OSui::adduser(const std::string &uname, const std::string &pwd, std::string
 void OSui::deluser(const std::string &uname)
 {
   if (uid != 0)
-    throw std::runtime_error("权限不足：缺少删除用户权限");
+  {
+    std::cout << "权限不足：缺少删除用户权限\n";
+    return;
+  }
 
   if (uname == "root")
-    throw std::runtime_error("权限不足：不能删除root用户");
+  {
+    std::cout << "权限不足：不能删除root用户\n";
+    return;
+  }
 
   File *userf = FM.fopen("/etc/users.txt", 0, 0);
   char *data = new char[userf->f_inode->i_size + 1]{0};
@@ -352,7 +321,10 @@ void OSui::deluser(const std::string &uname)
 void OSui::addgroup(const std::string &gname)
 {
   if (uid != 0)
-    throw std::runtime_error("权限不足：缺少添加用户组权限");
+  {
+    std::cout << "权限不足：缺少添加用户组权限\n";
+    return;
+  }
 
   File *groupf = FM.fopen("/etc/groups.txt", 0, 0);
   char *data = new char[groupf->f_inode->i_size + 1]{0};
@@ -386,10 +358,16 @@ void OSui::addgroup(const std::string &gname)
 void OSui::delgroup(const std::string &gname)
 {
   if (uid != 0)
-    throw std::runtime_error("权限不足：缺少删除用户组权限");
+  {
+    std::cout << "权限不足：缺少删除用户组权限\n";
+    return;
+  }
 
   if (gname == "root")
-    throw std::runtime_error("权限不足：不能删除root用户组");
+  {
+    std::cout << "权限不足：不能删除root用户组\n";
+    return;
+  }
 
   File *groupf = FM.fopen("/etc/groups.txt", 0, 0);
   char *data = new char[groupf->f_inode->i_size + 1]{0};
@@ -453,8 +431,6 @@ void OSui::delgroup(const std::string &gname)
   FM.fclose(userf);
 }
 
-void OSui::su(const std::string &uname) {}
-
 void OSui::df()
 {
   SuperBlock tmp_spb = FM.m_FileSystem.spb;
@@ -468,12 +444,24 @@ void OSui::df()
 
 void OSui::vim(const std::string &path) {}
 
+void OSui::write(const std::string &path, const std::string &content, int pos)
+{
+  std::string file_path = findPath(path, cur_dir);
+  File *fp = FM.fopen(file_path, uid, gid);
+  FM.flseek(fp, pos, SEEK_SET);
+  FM.fwrite(content.c_str(), content.length(), fp);
+  FM.fclose(fp);
+}
+
 void OSui::win2wlos(const std::string &fname1, const std::string &fname2)
 {
   FILE *winfp;
   fopen_s(&winfp, fname1.c_str(), "rb");
   if (winfp == NULL)
-    throw std::runtime_error("打开windows文件失败\n");
+  {
+    std::cout << "打开windows文件失败\n";
+    return;
+  }
 
   fseek(winfp, 0, SEEK_END);
   unsigned int file_size = ftell(winfp);
@@ -509,8 +497,10 @@ void OSui::wlos2win(const std::string &fname1, const std::string &fname2)
   FILE *winfp;
   fopen_s(&winfp, fname2.c_str(), "wb");
   if (winfp == NULL)
-    throw std::runtime_error("打开windows文件失败\n");
-
+  {
+    std::cout << "打开windows文件失败\n";
+    return;
+  }
   fwrite(data, f_size, 1, winfp);
   fclose(winfp);
   delete[] data;
@@ -527,7 +517,7 @@ void OSui::help()
   std::cout << "mkdir      <dir name>                       - 创建目录\n";
   std::cout << "cd         <dir name>                       - 进入目录\n";
   std::cout << "ls                                          - 显示当前目录清单\n";
-  std::cout << "rm         <dir name/dir name>              - 删除文件或文件夹\n";
+  std::cout << "rm         <file name/dir name>             - 删除文件或文件夹\n";
   std::cout << "touch      <file name>                      - 创建新文件\n";
   std::cout << "cat        <file name>                      - 打印文件内容\n";
   std::cout << "pwd                                         - 打印当前路径\n";
@@ -541,7 +531,8 @@ void OSui::help()
   std::cout << "su         <user name>                      - 切换用户\n";
   std::cout << "df                                          - 查看磁盘使用情况\n";
   std::cout << "vim        <file name>                      - 用编辑器打开文件\n";
-  std::cout << "win2wlos	 <win file name> <fs file name>   - 将Windows文件内容复制到WeliliangOS文件系统文件\n";
+  std::cout << "write      <file name> <pos>                - 写入文件\n";
+  std::cout << "win2wlos   <win file name> <fs file name>   - 将Windows文件内容复制到WeliliangOS文件系统文件\n";
   std::cout << "wlos2win   <fs file name> <win file name>   - 将WeliliangOS文件系统文件内容复制到Windows文件\n";
   std::cout << "help                                        - 显示帮助\n";
   std::cout << "cls                                         - 清屏\n";
@@ -592,20 +583,12 @@ void OSui::RunOS()
       }
       else if (args[0] == "mkdir")
       {
-        if (args.size() < 2)
-          std::cout << " mkdir 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " mkdir 命令 参数太多\n";
-        else
+        if (argsCheck("mkdir", args.size(), 2))
           mkdir(args[1]);
       }
       else if (args[0] == "cd")
       {
-        if (args.size() < 2)
-          std::cout << " cd 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " cd 命令 参数太多\n";
-        else
+        if (argsCheck("cd", args.size(), 2))
           cd(args[1]);
       }
       else if (args[0] == "ls")
@@ -614,29 +597,17 @@ void OSui::RunOS()
       }
       else if (args[0] == "rm")
       {
-        if (args.size() < 2)
-          std::cout << " rm 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " rm 命令 参数太多\n";
-        else
+        if (argsCheck("rm", args.size(), 2))
           rm(args[1]);
       }
       else if (args[0] == "touch")
       {
-        if (args.size() < 2)
-          std::cout << " touch 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " touch 命令 参数太多\n";
-        else
+        if (argsCheck("touch", args.size(), 2))
           touch(args[1]);
       }
       else if (args[0] == "cat")
       {
-        if (args.size() < 2)
-          std::cout << " cat 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " cat 命令 参数太多\n";
-        else
+        if (argsCheck("cat", args.size(), 2))
           cat(args[1]);
       }
       else if (args[0] == "pwd")
@@ -645,14 +616,13 @@ void OSui::RunOS()
       }
       else if (args[0] == "chmod")
       {
-        if (args.size() < 3)
-          std::cout << " chmod 命令 参数太少\n";
-        else if (args.size() > 3)
-          std::cout << " chmod 命令 参数太多\n";
-        else if (args[2].size() != 3)
-          std::cout << " chmod 命令 mode格式错误\n";
-        else
+        if (argsCheck("chmod", args.size(), 3))
         {
+          if (args[2].size() != 3)
+          {
+            std::cout << " chmod 命令 mode格式错误\n";
+            continue;
+          }
           int master = args[2][0] - '0';
           int group = args[2][1] - '0';
           int others = args[2][2] - '0';
@@ -673,28 +643,8 @@ void OSui::RunOS()
           std::cout << " adduser 命令 参数太多\n";
         else
         {
-          std::cout << "password: ";
           char password[256] = {0};
-          char ch = '\0';
-          int pos = 0;
-          while ((ch = _getch()) != '\r' && pos < 255)
-          {
-            if (ch != 8) // 不是回撤就录入
-            {
-              password[pos] = ch;
-              putchar('*'); // 并且输出*号
-              pos++;
-            }
-            else
-            {
-              putchar('\b'); // 这里是删除一个，我们通过输出回撤符 /b，回撤一格，
-              putchar(' ');  // 再显示空格符把刚才的*给盖住，
-              putchar('\b'); // 然后再 回撤一格等待录入。
-              pos--;
-            }
-          }
-          password[pos] = '\0';
-          putchar('\n');
+          inputPwd(password);
           if (args.size() == 2)
             adduser(args[1], std::string(password));
           else
@@ -703,61 +653,25 @@ void OSui::RunOS()
       }
       else if (args[0] == "deluser")
       {
-        if (args.size() < 2)
-          std::cout << " deluser 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " deluser 命令 参数太多\n";
-        else
+        if (argsCheck("deluser", args.size(), 2))
           deluser(args[1]);
       }
       else if (args[0] == "addgroup")
       {
-        if (args.size() < 2)
-          std::cout << " addgroup 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " addgroup 命令 参数太多\n";
-        else
+        if (argsCheck("addgroup", args.size(), 2))
           addgroup(args[1]);
       }
       else if (args[0] == "delgroup")
       {
-        if (args.size() < 2)
-          std::cout << " delgroup 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " delgroup 命令 参数太多\n";
-        else
+        if (argsCheck("delgroup", args.size(), 2))
           delgroup(args[1]);
       }
       else if (args[0] == "su")
       {
-        if (args.size() < 2)
-          std::cout << " su 命令 参数太少\n";
-        else if (args.size() > 2)
-          std::cout << " su 命令 参数太多\n";
-        else
+        if (argsCheck("su", args.size(), 2))
         {
-          std::cout << "password: ";
           char password[256] = {0};
-          char ch = '\0';
-          int pos = 0;
-          while ((ch = _getch()) != '\r' && pos < 255)
-          {
-            if (ch != 8) // 不是回撤就录入
-            {
-              password[pos] = ch;
-              putchar('*'); // 并且输出*号
-              pos++;
-            }
-            else
-            {
-              putchar('\b'); // 这里是删除一个，我们通过输出回撤符 /b，回撤一格，
-              putchar(' ');  // 再显示空格符把刚才的*给盖住，
-              putchar('\b'); // 然后再 回撤一格等待录入。
-              pos--;
-            }
-          }
-          password[pos] = '\0';
-          putchar('\n');
+          inputPwd(password);
           login(args[1], std::string(password));
         }
       }
@@ -768,24 +682,31 @@ void OSui::RunOS()
       else if (args[0] == "vim")
       {
       }
+      else if (args[0] == "write")
+      {
+        if (argsCheck("write", args.size(), 3))
+        {
+          std::cout << "请输入写入的内容(在单独一行输入 :q 结束): \n";
+          std::string content;
+          std::string line;
+          while (getline(std::cin, line))
+          {
+            if (line == ":q")
+              break;
+            else
+              content += line + '\n';
+          }
+          write(args[1], content, stoi(args[2]));
+        }
+      }
       else if (args[0] == "win2wlos")
       {
-        if (args.size() < 3)
-          std::cout << " win2wlos 命令 参数太少\n";
-        else if (args.size() > 3)
-          std::cout << " win2wlos 命令 参数太多\n";
-        else
-        {
+        if (argsCheck("win2wlos", args.size(), 3))
           win2wlos(args[1], args[2]);
-        }
       }
       else if (args[0] == "wlos2win")
       {
-        if (args.size() < 3)
-          std::cout << " wlos2win 命令 参数太少\n";
-        else if (args.size() > 3)
-          std::cout << " wlos2win 命令 参数太多\n";
-        else
+        if (argsCheck("wlos2win", args.size(), 3))
           wlos2win(args[1], args[2]);
       }
       else if (args[0] == "cls")
@@ -804,31 +725,14 @@ void OSui::RunOS()
     }
     else
     {
-      if (args[0] == "login" && args.size() == 2)
+      if (args[0] == "login")
       {
-        std::cout << "password: ";
-        char password[256] = {0};
-        char ch = '\0';
-        int pos = 0;
-        while ((ch = _getch()) != '\r' && pos < 255)
+        if (argsCheck("login", args.size(), 2))
         {
-          if (ch != 8) // 不是回撤就录入
-          {
-            password[pos] = ch;
-            putchar('*'); // 并且输出*号
-            pos++;
-          }
-          else
-          {
-            putchar('\b'); // 这里是删除一个，我们通过输出回撤符 /b，回撤一格，
-            putchar(' ');  // 再显示空格符把刚才的*给盖住，
-            putchar('\b'); // 然后再 回撤一格等待录入。
-            pos--;
-          }
+          char password[256] = {0};
+          inputPwd(password);
+          login(args[1], std::string(password));
         }
-        password[pos] = '\0';
-        putchar('\n');
-        login(args[1], std::string(password));
       }
       else if (args[0] == "help")
       {

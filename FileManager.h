@@ -38,9 +38,9 @@ public:
   void dcreate(const std::string &path, short uid, short gid); // 创建文件夹
   void ddelete(const std::string &path, short uid, short gid); // 删除文件夹
 
-  void ChMod(const std::string &path, int mode, short uid, short gid);        // 修改文件权限
-  std::vector<std::string> LS(const std::string &path, short uid, short gid); // 列出目录下文件
-  bool Enter(const std::string &path, short uid, short gid);                  // 进入目录
+  void ChMod(const std::string &path, int mode, short uid, short gid); // 修改文件权限
+  void LS(const std::string &path, short uid, short gid);              // 列出目录下文件
+  bool Enter(const std::string &path, short uid, short gid);           // 进入目录
 
   /*初始化*/
   void Initialize();
