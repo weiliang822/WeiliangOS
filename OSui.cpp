@@ -442,8 +442,6 @@ void OSui::df()
   printf("%-10s    %-10d    %-10d    %-10d     %-10.2f      %s\n", "WeiliangOS", WLOS_DISK_SIZE, used, avaial, use_per, "/");
 }
 
-void OSui::vim(const std::string &path) {}
-
 void OSui::write(const std::string &path, const std::string &content, int pos)
 {
   std::string file_path = findPath(path, cur_dir);
@@ -513,30 +511,29 @@ void OSui::cls()
 
 void OSui::help()
 {
-  std::cout << "format                                      - 格式化文件系统\n";
-  std::cout << "mkdir      <dir name>                       - 创建目录\n";
-  std::cout << "cd         <dir name>                       - 进入目录\n";
-  std::cout << "ls                                          - 显示当前目录清单\n";
-  std::cout << "rm         <file name/dir name>             - 删除文件或文件夹\n";
-  std::cout << "touch      <file name>                      - 创建新文件\n";
-  std::cout << "cat        <file name>                      - 打印文件内容\n";
-  std::cout << "pwd                                         - 打印当前路径\n";
-  std::cout << "chmod      <file name/dir name> <mode(OTC>  - 修改文件或目录权限\n";
-  std::cout << "login      <user name>                      - 用户登录\n";
-  std::cout << "logout                                      - 用户注销\n";
-  std::cout << "adduser    <user name> <group name>         - 添加用户\n";
-  std::cout << "deluser    <user name>                      - 删除用户\n";
-  std::cout << "addgroup   <group name>                     - 添加用户组\n";
-  std::cout << "delgroup   <group name>                     - 删除用户组\n";
-  std::cout << "su         <user name>                      - 切换用户\n";
-  std::cout << "df                                          - 查看磁盘使用情况\n";
-  std::cout << "vim        <file name>                      - 用编辑器打开文件\n";
-  std::cout << "write      <file name> <pos>                - 写入文件\n";
-  std::cout << "win2wlos   <win file name> <fs file name>   - 将Windows文件内容复制到WeliliangOS文件系统文件\n";
-  std::cout << "wlos2win   <fs file name> <win file name>   - 将WeliliangOS文件系统文件内容复制到Windows文件\n";
-  std::cout << "help                                        - 显示帮助\n";
-  std::cout << "cls                                         - 清屏\n";
-  std::cout << "exit                                        - 退出系统\n";
+  std::cout << "format                                        - 格式化文件系统\n";
+  std::cout << "mkdir      <dir name>                         - 创建目录\n";
+  std::cout << "cd         <dir name>                         - 进入目录\n";
+  std::cout << "ls                                            - 显示当前目录清单\n";
+  std::cout << "rm         <file name/dir name>               - 删除文件或文件夹\n";
+  std::cout << "touch      <file name>                        - 创建新文件\n";
+  std::cout << "cat        <file name>                        - 打印文件内容\n";
+  std::cout << "pwd                                           - 打印当前路径\n";
+  std::cout << "chmod      <file name/dir name> <mode(OTC)>   - 修改文件或目录权限\n";
+  std::cout << "login      <user name>                        - 用户登录\n";
+  std::cout << "logout                                        - 用户注销\n";
+  std::cout << "adduser    <user name> <group name(optional)> - 添加用户\n";
+  std::cout << "deluser    <user name>                        - 删除用户\n";
+  std::cout << "addgroup   <group name>                       - 添加用户组\n";
+  std::cout << "delgroup   <group name>                       - 删除用户组\n";
+  std::cout << "su         <user name>                        - 切换用户\n";
+  std::cout << "df                                            - 查看磁盘使用情况\n";
+  std::cout << "write      <file name> <pos>                  - 写入文件\n";
+  std::cout << "win2wlos   <win file name> <fs file name>     - 将Windows文件内容导入到WeliliangOS文件系统文件\n";
+  std::cout << "wlos2win   <fs file name> <win file name>     - 将WeliliangOS文件系统文件内容导入到Windows文件\n";
+  std::cout << "help                                          - 显示帮助\n";
+  std::cout << "cls                                           - 清屏\n";
+  std::cout << "exit                                          - 退出系统\n";
 }
 
 void OSui::RunOS()
@@ -560,6 +557,11 @@ void OSui::RunOS()
     std::wcout << computerName << ":" << (user == "root" ? "# " : "$ ");
     std::string input;
     getline(std::cin, input);
+    if (input.size() == 0)
+    {
+      std::cout << '\n';
+      continue;
+    }
     std::vector<std::string> args = splitstring(input, " ");
 
     if (is_login)

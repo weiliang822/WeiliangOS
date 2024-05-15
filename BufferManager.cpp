@@ -214,8 +214,8 @@ void BufferManager::bread(char *des_addr, unsigned int src_addr, unsigned int le
     }
     else if (blkno == end_blkno)
     {
-      memcpy_s(des_addr + pos, (src_addr + len - 1) % BUFFER_SIZE - 0 + 1, bp->b_addr, (src_addr + len - 1) % BUFFER_SIZE - 0 + 1);
-      pos += (src_addr + len - 1) % BUFFER_SIZE - 0 + 1;
+      memcpy_s(des_addr + pos, (src_addr + len - 1) % BUFFER_SIZE + 1, bp->b_addr, (src_addr + len - 1) % BUFFER_SIZE + 1);
+      pos += (src_addr + len - 1) % BUFFER_SIZE + 1;
     }
     else
     {
@@ -245,8 +245,8 @@ void BufferManager::bwrite(const char *src_addr, unsigned int des_addr, unsigned
     }
     else if (blkno == end_blkno)
     {
-      memcpy_s(bp->b_addr, (des_addr + len - 1) % BUFFER_SIZE - 0 + 1, src_addr + pos, (des_addr + len - 1) % BUFFER_SIZE - 0 + 1);
-      pos += (des_addr + len - 1) % BUFFER_SIZE - 0 + 1;
+      memcpy_s(bp->b_addr, (des_addr + len - 1) % BUFFER_SIZE + 1, src_addr + pos, (des_addr + len - 1) % BUFFER_SIZE + 1);
+      pos += (des_addr + len - 1) % BUFFER_SIZE + 1;
     }
     else
     {

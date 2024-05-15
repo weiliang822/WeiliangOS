@@ -8,7 +8,7 @@
  * 系统中每一个打开的文件、当前访问目录、
  * 挂载的子文件系统都对应唯一的内存inode。
  * 每个内存inode通过外存inode所在存储设备的设备号(i_dev)
- * 以及该设备外存inode区中的编号(i_number)来确定
+ * 以及该设备外存inode区中的编号(i_no)来确定
  * 其对应的外存inode。
  */
 class Inode

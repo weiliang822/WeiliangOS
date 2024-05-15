@@ -19,7 +19,7 @@ std::string findPath(const std::string &path, const std::string &cur_dir)
     if (path[0] == '/')
         return path;
     else
-        return cur_dir + path;
+        return cur_dir + '/' + path;
 }
 
 bool argsCheck(const std::string &cmd, int sz, int num)

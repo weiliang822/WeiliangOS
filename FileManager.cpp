@@ -173,7 +173,7 @@ void FileManager::_write(Inode &inode, const char *buf, int offset, int len)
       else
       {
         int b_no = this->m_FileSystem.BAlloc();
-        secondary_index[i] = b_no;
+        secondary_index[j] = b_no;
       }
       for (int k = 0; k < BLOCK_SIZE / sizeof(int) && b_cnt < cur_b_num; k++)
       {
@@ -182,11 +182,11 @@ void FileManager::_write(Inode &inode, const char *buf, int offset, int len)
         else
         {
           int b_no = this->m_FileSystem.BAlloc();
-          primary_index[i] = b_no;
+          primary_index[k] = b_no;
           b_cnt++;
         }
       }
-      this->m_FileSystem.m_BufferManager.bwrite((const char *)primary_index, DATA_START_ADDR + secondary_index[i] * BLOCK_SIZE, BLOCK_SIZE);
+      this->m_FileSystem.m_BufferManager.bwrite((const char *)primary_index, DATA_START_ADDR + secondary_index[j] * BLOCK_SIZE, BLOCK_SIZE);
       delete[] primary_index; // 释放一级索引数组
     }
     this->m_FileSystem.m_BufferManager.bwrite((const char *)secondary_index, DATA_START_ADDR + inode.i_addr[i] * BLOCK_SIZE, BLOCK_SIZE);
@@ -895,8 +895,14 @@ void FileManager::LS(const std::string &path, short uid, short gid)
       }
     }
 
-    std::cout << uname << "  " << gname << " ";
+    std::cout << uname << "  " << gname << " " << sub_inode.i_size << " ";
     std::cout << dir_li[i].m_name << "  ";
+
+    tm stdT; // 存储时间
+    time_t time = sub_inode.i_mtime;
+    localtime_s(&stdT, (const time_t *)&time);
+
+    std::cout << 1900 + stdT.tm_year << "年" << stdT.tm_mon + 1 << "月" << stdT.tm_mday << "日" << stdT.tm_hour << "时" << stdT.tm_min << "分" << stdT.tm_sec << "秒";
     std::cout << '\n';
     // res.push_back(permission);
   }

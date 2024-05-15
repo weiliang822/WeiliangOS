@@ -34,7 +34,6 @@ protected:
   void addgroup(const std::string &gname);
   void delgroup(const std::string &gname);
   void df();
-  void vim(const std::string &path);
   void write(const std::string &path, const std::string &content, int pos);
   void win2wlos(const std::string &fname1, const std::string &fname2);
   void wlos2win(const std::string &fname1, const std::string &fname2);
